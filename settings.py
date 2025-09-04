@@ -1,13 +1,11 @@
-# settings.py
-# Carrega configs a partir de st.secrets (se existir) ou variáveis de ambiente.
+# settings.py (UPDATE)
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
 import os
-import json
 
 try:
-    import streamlit as st  # permite ler secrets do Streamlit
+    import streamlit as st
     SECRETS = st.secrets
 except Exception:
     SECRETS = None
@@ -15,14 +13,20 @@ except Exception:
 @dataclass
 class Settings:
     gsheet_id: str
-    gcp_sa_info: Optional[Dict[str, Any]]  # dict do service account (st.secrets["gcp_service_account"])
-    gcp_sa_file: Optional[str]             # caminho do .json (fallback se não houver dict)
+    gcp_sa_info: Optional[Dict[str, Any]]
+    gcp_sa_file: Optional[str]
 
-    # Notion (opcional)
+    # Notion
     notion_token: Optional[str]
     notion_block_id: Optional[str]
+    studies_db_id: Optional[str]  # >>> MANUAL INPUT (opcional, para futura leitura de Estudos)
 
-    # Manuais / links (placeholders sem automação agora)
+    # Mercado
+    win_ticker: Optional[str]
+    wdo_ticker: Optional[str]
+    te_api_key: Optional[str]     # TradingEconomics API (opcional)
+
+    # Manuais / links
     loss_max_r: str
     pause_trigger_regra: str
     lazer_streak: str
@@ -31,7 +35,7 @@ class Settings:
     link_fundscreener: str
     link_swm: str
 
-    # Estudos (manter manual por enquanto; futuro: Notion DB)
+    # Estudos (manuais por enquanto)
     cga_status: str
     estudo_min_hoje: str
     livro_titulo: str
@@ -39,9 +43,7 @@ class Settings:
     livro_pag_total: str
     livro_progresso: str
 
-
 def _get_secret(path: str, default=None):
-    """Busca em st.secrets usando 'a.b.c' como caminho. Se não achar, retorna default."""
     if not SECRETS:
         return default
     cur = SECRETS
@@ -53,38 +55,36 @@ def _get_secret(path: str, default=None):
         return default
 
 def load_settings() -> Settings:
-    # --- Google Sheets ---
     gsheet_id = _get_secret("gsheet_id") or os.getenv("HUD_GSHEET_ID") or ""
     if not gsheet_id:
-        # >>> MANUAL INPUT: Se você não usa st.secrets nem env, coloque o ID da planilha abaixo:
+        # >>> MANUAL INPUT: cole o ID da planilha aqui para testar rápido:
         # gsheet_id = "1rwcDJA1yZ2hbsJx-HOW0dCduvWqV0z7f9Iio0HI1WwY"
         pass
     if not gsheet_id:
-        raise ValueError("Defina o ID da planilha (st.secrets['gsheet_id'] ou env HUD_GSHEET_ID).")
+        raise ValueError("Defina st.secrets['gsheet_id'] ou env HUD_GSHEET_ID.")
 
     gcp_sa_info = _get_secret("gcp_service_account")
     gcp_sa_file = os.getenv("GCP_SERVICE_ACCOUNT_FILE")
 
-    # --- Notion ---
     notion_token = _get_secret("notion.token") or os.getenv("NOTION_TOKEN")
     notion_block_id = _get_secret("notion.block_id") or os.getenv("NOTION_BLOCK_ID")
+    studies_db_id = _get_secret("notion.studies_db_id") or os.getenv("NOTION_STUDIES_DB_ID")  # opcional
 
-    # --- Manuais / Links ---
+    # Mercado
+    win_ticker = _get_secret("market.win_ticker") or os.getenv("MARKET_WIN_TICKER")  # ex.: "WIN$N" (se houver provedor)
+    wdo_ticker = _get_secret("market.wdo_ticker") or os.getenv("MARKET_WDO_TICKER")
+    te_api_key = _get_secret("tradingeconomics.api_key") or os.getenv("TE_API_KEY")  # ex.: "guest:guest"
+
+    # Manuais/links
     loss_max_r = _get_secret("manual.loss_max_r", "-") or "-"
     pause_trigger_regra = _get_secret("manual.pause_trigger_regra", "-") or "-"
     lazer_streak = _get_secret("manual.lazer_streak", "0") or "0"
-
     link_garmin = _get_secret("links.garmin", "-") or os.getenv("LINK_GARMIN", "-")
     link_notion = _get_secret("links.notion", "-") or os.getenv("LINK_NOTION", "-")
     link_fundscreener = _get_secret("links.fundscreener", "-") or os.getenv("LINK_FUNDSCREENER", "-")
     link_swm = _get_secret("links.swm", "-") or os.getenv("LINK_SWM", "-")
 
-    # >>> MANUAL INPUT: Se quiser fixar valores manuais direto aqui, pode sobrescrever:
-    # loss_max_r = "R$ 600"
-    # pause_trigger_regra = "2 losses seguidos ou -R$ 600"
-    # lazer_streak = "3"
-
-    # Estudos (manter manual enquanto não integremos Notion DB)
+    # Estudos (manuais por enquanto)
     cga_status = _get_secret("estudos.cga_status", "-")
     estudo_min_hoje = _get_secret("estudos.estudo_min_hoje", "-")
     livro_titulo = _get_secret("estudos.livro_titulo", "-")
@@ -98,6 +98,10 @@ def load_settings() -> Settings:
         gcp_sa_file=gcp_sa_file,
         notion_token=notion_token,
         notion_block_id=notion_block_id,
+        studies_db_id=studies_db_id,
+        win_ticker=win_ticker,
+        wdo_ticker=wdo_ticker,
+        te_api_key=te_api_key,
         loss_max_r=loss_max_r,
         pause_trigger_regra=pause_trigger_regra,
         lazer_streak=lazer_streak,
