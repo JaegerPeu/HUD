@@ -3,3 +3,6 @@ gspread
 gspread-dataframe
 google-auth
 requests
+yfinance
+feedparser
+python-dateutil
